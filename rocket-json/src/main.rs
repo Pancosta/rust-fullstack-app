@@ -1,48 +1,16 @@
 
 #[macro_use] extern crate rocket;
 
-use rocket::serde::{json::Json, Serialize};
+mod controllers;
+mod model_views;
+mod models;
 
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-
-struct Recurso{
-    id: u32,
-    titulo: String,
-    descricao: String,
-}
-
-#[derive(Serialize)]
-#[serde{crate = "rocket::serde" }]
-
-struct Home{  
-    mensagem: String,
-    endpoints: Vec<String>
-}
-
-#[get("/")]
-fn home()->Json<Home>{
-    Json(Home{
-        mensagem:"bem vindo a API".to_string(),
-        endpoints: vec![
-            "/recursos".to_string()
-        ],
-    })
-}
-#[get("/recursos")]
-fn recursos_index()->Json<Vec<Recurso>>{
-    let recursos = vec![
-        Recurso{id:1,titulo: "Recurso 1".to_string(), descricao:"descricao do Recurso 1".to_string()},
-        Recurso{id:2,titulo: "Recurso 2".to_string(), descricao:"descricao do Recurso 2".to_string()}
-    ];
-
-    Json(recursos)
-}
+use controllers::*;
 
 #[launch]
 fn rocket()->_ {
     rocket::build().mount("/", routes![
-        home,
-        recursos_index
+        home_controller::index,
+        recursos_controller::index
     ])
 }
