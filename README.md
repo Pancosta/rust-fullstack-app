@@ -1,77 +1,34 @@
-# Rocket JSON API
+# E-commerce: Carrinho de Compras em Rust
 
-Este é um projeto de estudo de uma **API REST** construída em [Rust](https://www.rust-lang.org/) usando o framework [Rocket](https://rocket.rs/). O objetivo principal é demonstrar o retorno de respostas no formato JSON, criar rotas de CRUD (Criar, Ler, Atualizar e Deletar) para uma entidade `cliente`, e implementar um sistema básico de autenticação via token JWT (JSON Web Token).
+Este é um projeto Fullstack construído em **Rust** usando o framework **Rocket**. O sistema é um e-commerce simples contendo as funcionalidades de listagem de produtos, adição e remoção de itens em um carrinho de compras, e um cadastro de clientes.
 
-## 🚀 Como rodar o projeto
+Diferente de uma simples API JSON, este projeto utiliza **Renderização do Lado do Servidor (SSR)**, entregando páginas web (HTML, CSS, JS) através de templates interativos.
 
-Certifique-se de ter o Rust e o Cargo instalados na sua máquina.
+## 🚀 Como executar o projeto
 
-1. Clone o repositório ou navegue até a pasta do projeto:
+1. Certifique-se de que o Rust e Cargo estão instalados.
+2. O projeto utiliza um banco de dados **SQLite**, que já vem configurado na pasta `db/rusqlite.db` do projeto principal.
+3. Navegue até a pasta do projeto (caso não esteja nela) e inicie o servidor:
    ```bash
    cd rocket-json
-   ```
-2. Inicie o servidor:
-   ```bash
    cargo run
    ```
-O servidor estará rodando localmente em `http://127.0.0.1:8000`.
+4. Acesse no seu navegador: `http://127.0.0.1:8000/`
 
-## 📚 Endpoints Disponíveis
+## 🛠 Tecnologias e Bibliotecas Utilizadas
+- **[Rust](https://www.rust-lang.org/)**: Linguagem principal da aplicação.
+- **[Rocket](https://rocket.rs/)**: Framework Web.
+- **[Tera](https://keats.github.io/tera/)** (via `rocket_dyn_templates`): Motor de templates para renderização do HTML.
+- **[Rusqlite](https://github.com/rusqlite/rusqlite)**: Interface para comunicação com o banco de dados SQLite.
+- **[Chrono](https://crates.io/crates/chrono)**: Manipulação de datas e horários.
+- **[Dotenv](https://crates.io/crates/dotenv)**: Gerenciamento de variáveis de ambiente.
 
-Você pode testar estas rotas usando ferramentas como **Insomnia**, **Postman** ou **cURL**. Lembre-se de adicionar o cabeçalho `Content-Type: application/json` quando enviar dados no corpo da requisição.
-
-### 🏠 Rota Inicial
-- **`GET /`**
-  - **Descrição:** Retorna uma mensagem de boas-vindas simples.
-
-### 🔐 Autenticação (Login)
-- **`POST /logar`**
-  - **Descrição:** Simula o login de um usuário e retorna um Token JWT. Este token pode ser utilizado para acessar rotas protegidas enviando-o no Header como `Authorization: Bearer <seu-token>`.
-  - **Corpo (JSON):**
-    ```json
-    {
-        "username": "admin",
-        "password": "123"
-    }
-    ```
-
-### 👥 CRUD de Clientes
-
-⚠️ **Atenção:** Como se trata de um projeto de estudo mocardo, existem regras de validação engessadas (hardcoded) em algumas rotas.
-
-- **`GET /clientes`**
-  - Retorna uma lista de todos os clientes cadastrados (dados fictícios).
-
-- **`GET /clientes/<id>`**
-  - Retorna as informações do cliente específico correspondente ao ID informado.
-
-- **`POST /clientes`**
-  - Cria um novo cliente.
-  - **Regra:** O campo `nome` deve ser exatamente `"Cliente Teste"`, caso contrário a API retornará um erro `400 Bad Request`.
-  - **Corpo (JSON):**
-    ```json
-    {
-        "nome": "Cliente Teste",
-        "cpf": "123.456.789-00"
-    }
-    ```
-
-- **`PUT /clientes/<id>`**
-  - Atualiza um cliente existente.
-  - **Regra:** Assim como na criação, exige que o campo `nome` seja `"Cliente Teste"`.
-  - **Corpo (JSON):**
-    ```json
-    {
-        "nome": "Cliente Teste",
-        "cpf": "000.000.000-00"
-    }
-    ```
-
-- **`DELETE /clientes/<id>`**
-  - Deleta um cliente existente.
-  - **Regra:** A exclusão só será bem-sucedida se o ID passado for `1`. Para qualquer outro ID, retornará erro `404 Not Found`.
-
-## 🛠 Tecnologias utilizadas
-- [Rust](https://www.rust-lang.org/)
-- [Rocket Framework](https://rocket.rs/)
-- Serde (para serialização e manipulação de JSON)
+## 📂 Estrutura do Projeto
+A maior parte do código fonte encontra-se dentro da pasta `/rocket-json/`:
+- `src/controllers/`: Responsável por receber as requisições HTTP e orquestrar as respostas (renderizando templates).
+- `src/repositorios/`: Camada de abstração do banco de dados (SQLite), onde as queries SQL são executadas.
+- `src/models/`: Representação das entidades do banco (ex: `Cliente`, `Produto`, `Pedido`).
+- `src/modelviews/` & `src/dtos/`: Estruturas para transferir dados formatados para a view ou validar entradas.
+- `templates/`: Páginas e componentes em HTML, usando a sintaxe Tera (ex: `index.html.tera`).
+- `static/`: Recursos visuais, arquivos CSS, fontes e scripts JS (ex: Bootstrap).
+- `db/`: Arquivo físico do banco de dados SQLite e scripts de criação.
