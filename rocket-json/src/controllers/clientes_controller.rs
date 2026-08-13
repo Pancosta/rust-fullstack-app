@@ -1,100 +1,80 @@
-use rocket::serde::json::Json;
-use rocket::response::status::{Custom, NotFound};
-use rocket::http::Status;
-use rocket::response::status;
-
-use crate::models;
-use crate::models::cliente::Cliente;
+use rocket_dyn_templates::{Template, context};
 use crate::servicos::cliente_servico;
 
-#[derive(Debug, serde::Deserialize)]
-pub struct NovoClienteJson {
-    nome: String,
-    cpf: String,
-}
+use rocket::form::Form;
+use rocket::response::{Redirect, Flash};
+use crate::dtos::cliente_dto::ClienteDto;
+use rocket::request::FlashMessage;
 
-// Implementando a função processar_novo_cliente
-fn processar_novo_cliente(cliente: &NovoClienteJson) -> Result<(), Custom<String>> {
-    if cliente.nome == "Cliente Teste" {
-        Ok(())
-    } else {
-        Err(Custom(Status::BadRequest, "Informações inválidas".to_string()))
-    }
-}
-
-// Implementando a função atualizar_cliente
-fn atualizar_cliente(id: u32, cliente: &NovoClienteJson) -> Result<(), Custom<String>> {
-    println!("{}", id);
-    
-    if cliente.nome == "Cliente Teste" {
-        Ok(())
-    } else {
-        Err(Custom(Status::BadRequest, "Erro ao atualizar o cliente".to_string()))
-    }
-}
-
-// Implementando a função excluir_cliente
-fn excluir_cliente(id: u32) -> Result<(), Custom<String>> {
-    if id == 1 {
-        Ok(())
-    } else {
-        Err(Custom(Status::NotFound, "Cliente não encontrado".to_string()))
-    }
-}
-
-// Endpoint para listar todos os clientes
 #[get("/clientes")]
-pub fn index() -> Json<Vec<Cliente>> {
-    let clientes = cliente_servico::get_clientes();
-    Json(clientes)
+pub fn index() -> Template {
+    let clientes = cliente_servico::listar();
+    Template::render("clientes/index", context!{ clientes: &clientes })
 }
 
-
-#[post("/clientes", data = "<cliente_data>")]
-pub async fn create(cliente_data: Json<NovoClienteJson>) -> Result<status::Custom<Json<Cliente>>, Custom<String>> {
-    let cliente = cliente_data.into_inner();
-    
-    println!("{}", cliente.nome);
-    println!("{}", cliente.cpf);
-
-    processar_novo_cliente(&cliente)?;
-
-    let cliente_db = models::cliente::Cliente{
-        id: 0,
-        nome: cliente.nome,
-        cpf: cliente.cpf
-    };
-
-    Ok(status::Custom(Status::Created, Json(cliente_db)))
+#[get("/clientes/novo")]
+pub fn novo(flash: Option<FlashMessage<'_>>) -> Template {
+    Template::render("clientes/novo", context!{ erro: erro_flash(flash) })
 }
 
+#[post("/clientes/criar", data = "<cliente_dto_form>")]
+pub fn criar(cliente_dto_form: Form<ClienteDto>) -> Result<Redirect, Flash<Redirect>>  {
+    let cliente_dto = cliente_dto_form.into_inner();
 
-// Endpoint para editar um cliente existente
-#[get("/clientes/<id>")]
-pub fn show(id: u32) -> Result<Json<Cliente>, NotFound<&'static str>> {
-    let cliente = Cliente { id: id, nome: "Cliente 1".to_string(), cpf: "000.000.000-01".to_string() };
-    if cliente.id == 0 {
-        Err(NotFound("Cliente não encontrado"))
+    if cliente_servico::criar(cliente_dto.nome, cliente_dto.telefone) {
+        Ok(Redirect::to("/clientes"))
     } else {
-        Ok(Json(cliente))
+        Err(Flash::error(
+            Redirect::to("/clientes/novo"),
+            "Erro ao cadastrar cliente",
+        ))
     }
 }
 
-#[put("/clientes/<id>", data = "<cliente_data>")]
-pub async fn update(id: u32, cliente_data: Json<NovoClienteJson>) -> Result<Json<String>, Custom<String>> {
-    let cliente = cliente_data.into_inner();
-    
-    println!("{}", cliente.nome);
-    println!("{}", cliente.cpf);
-
-    atualizar_cliente(id, &cliente)?;
-
-    Ok(Json("Cliente atualizado com sucesso".to_string()))
+#[get("/clientes/<id>/editar")]
+pub fn editar(id: u32, flash: Option<FlashMessage<'_>>) -> Template  {
+    let cliente = cliente_servico::buscar_por_id(id);
+    Template::render("clientes/editar", context! { 
+        cliente: &cliente,
+        erro: erro_flash(flash)
+    })
 }
 
-// Endpoint para excluir um cliente
-#[delete("/clientes/<id>")]
-pub fn delete(id: u32) -> Result<status::NoContent, status::Custom<String>> {
-    excluir_cliente(id)?;
-    Ok(status::NoContent)
+#[post("/clientes/<id>/alterar", data = "<cliente_dto_form>")]
+pub fn alterar(id: u32, cliente_dto_form: Form<ClienteDto>) -> Result<Redirect, Flash<Redirect>> {
+    let cliente_dto = cliente_dto_form.into_inner();
+    
+    if cliente_servico::alterar(id, cliente_dto.nome, cliente_dto.telefone) {
+        Ok(Redirect::to("/clientes"))
+    } else {
+        Err(Flash::error(
+            Redirect::to(format!("/clientes/{}/editar", id)),
+            "Erro ao alterar cliente",
+        ))
+    }
+}
+
+
+#[get("/clientes/<id>/excluir")]
+pub fn excluir(id: u32) -> Result<Redirect, Flash<Redirect>> {
+    if cliente_servico::excluir_por_id(id) {
+        Ok(Redirect::to("/clientes"))
+    } else {
+        Err(Flash::error(
+            Redirect::to(format!("/clientes/{}/editar", id)),
+            "Erro ao excluir cliente",
+        ))
+    }
+}
+
+
+fn erro_flash(flash: Option<FlashMessage<'_>>) -> String {
+    let mut erro = "".to_string();
+    if let Some(msg) = flash {
+        if msg.kind() == "error" {
+            erro = msg.message().to_string();
+        }
+    }
+
+    erro
 }

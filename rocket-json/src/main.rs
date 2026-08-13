@@ -1,30 +1,39 @@
 #[macro_use] extern crate rocket;
 
-mod model_views;
 mod models;
 mod servicos;
-mod middlewares;
+mod dtos;
+mod repositorios;
+mod config;
+mod modelviews;
 
 mod controllers {
     pub mod home_controller;
     pub mod clientes_controller;
-    pub mod login_controller;
+    pub mod compras_controller;
 }
+
+use rocket_dyn_templates::Template;
+use controllers::{ home_controller, clientes_controller, compras_controller };
+use rocket::fs::{FileServer, relative};
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build()
-        .attach(middlewares::auth_guard::JwtFairing)
-        .mount("/", routes![
-            controllers::home_controller::index,
-            controllers::home_controller::unauthorized,
+    rocket::build().mount("/", routes![
+        home_controller::index,
 
-            controllers::login_controller::logar,
+        compras_controller::index,
+        compras_controller::adicionar,
+        compras_controller::carrinho,
+        compras_controller::excluir_item,
 
-            controllers::clientes_controller::index,
-            controllers::clientes_controller::create,
-            controllers::clientes_controller::update,
-            controllers::clientes_controller::show,
-            controllers::clientes_controller::delete,
-        ])
+        clientes_controller::index,
+        clientes_controller::novo,
+        clientes_controller::criar,
+        clientes_controller::editar,
+        clientes_controller::alterar,
+        clientes_controller::excluir,
+    ])
+    .mount("/static", FileServer::from(relative!("static")))
+    .attach(Template::fairing())
 }
